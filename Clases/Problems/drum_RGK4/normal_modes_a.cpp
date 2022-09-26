@@ -10,8 +10,8 @@ int main(void){
   double x1 = 1;
   double x2 = 0;
 
-  for(double t=1e-15; t<10; ){
-    Runge_one_step(t, x1, x2, dt, 1);
+  for(double t=0.01; t<10; ){
+    Runge_one_step(t, x1, x2, dt, 14.9323);
     std::cout<<t<<"\t"<<x1<<std::endl;
   }
 

@@ -1,0 +1,76 @@
+#include<iostream>
+#include<cmath>
+
+double f1(double t, double x1, double x2, double beta);
+double f2(double t, double x1, double x2, double beta);
+void Runge_one_step(double &t0, double &x10, double &x20, double dt, double beta);
+double S_inf(double t, double x1, double x2, double beta, double dt);
+double beta = 0.35;
+//double gamma = 0.08;
+
+int main(){
+
+  double t,x1, x2;
+  double dt = 0.1;
+  //Beta*s(0) - gamma > 0 implica que la tasa de infectados crece.
+  //Punto a)
+  
+  /* for(t=0, x1=0.999, x2=0.0001; t<200; ){
+
+    std::cout<<t<<" "<< x1 << " " << x2 << " "<<1-(x1+x2)<<std::endl;
+    Runge_one_step(t,x1,x2,dt, beta);
+    }*/
+
+  for(beta =0; beta<20;  beta+=0.01){
+
+    std::cout<<beta/0.08<<" "<< S_inf(t, x1, x2, beta, dt)<<std::endl;
+  }
+
+  
+
+  
+  return 0;
+}
+
+double S_inf(double t, double x1, double x2, double beta, double dt){
+
+  for (t = 0 , x1 = 0.999, x2 = 0.0001; t<150; ) {Runge_one_step(t, x1, x2, dt, beta);}
+
+   return x2;
+  
+
+}
+
+double f1(double t, double x1, double x2, double beta){
+
+ 
+  
+  return -beta*x1*x2;
+}
+
+double f2(double t, double x1, double x2, double beta){
+ 
+
+  return beta*x1*x2-0.08*x2;
+}
+
+void Runge_one_step(double &t0, double &x10, double &x20, double dt, double beta){
+
+  double dx11, dx21, dx31, dx41;
+  double dx12, dx22, dx32, dx42;
+
+
+  dx11 = f1(t0,x10,x20, beta)*dt;                                  dx12 = f2(t0,x10,x20, beta)*dt;
+
+  dx21 = dt*f1(t0+ 0.5*dt, x10 + 0.5*dx11, x20 + 0.5*dx12, beta);  dx22 = dt*f2(t0+ 0.5*dt, x10 + 0.5*dx11, x20 + 0.5*dx12, beta);
+
+  dx31 = dt*f1(t0+ 0.5*dt, x10 + 0.5*dx21, x20 + 0.5*dx22, beta);  dx32 = dt*f2(t0+ 0.5*dt, x10 + 0.5*dx21, x20 + 0.5*dx22, beta);
+
+  dx41 = dt*f1(t0+ 0.5*dt, x10 + dx31, x20 + dx32, beta);          dx42 = dt*f2(t0+ 0.5*dt, x10 + dx31, x20 + dx32, beta);  
+
+  
+  x10+=(dx11 + 2*dx21 + 2*dx31 + dx41)/6;
+  x20+=(dx12 + 2*dx22 + 2*dx32 + dx42)/6;
+  t0+=dt;
+
+}

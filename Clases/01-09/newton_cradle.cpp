@@ -4,7 +4,7 @@
 
 using namespace std;//Constantes globales
 
-const int N=5;
+const int N=3;
 const double g=980;
 const double k = 1e7;
 
@@ -104,14 +104,14 @@ void TermineCuadro(void){
 int main(){
   Cuerpo Planeta[N];
   Colisionador Newton;
-  double m0=50, l0 = 12, r0=2, theta0 = -0.2, omega0=10;
+  double m0=50, l0 = 12, r0=1.5, theta0 = -0.2, omega0=10;
   double T=2*M_PI*std::sqrt(l0/g);
   double t,tmax=5*T,dt=1e-5;
   double tdibujo,tcuadro=T/500;
   int i;
   
   //---------------(x0,y0,z0,Vx0,Vy0,Vz,m0,R0)
-  Planeta[0].Inicie(-0.2, 0, m0, r0, l0, 0);
+  Planeta[0].Inicie(-0.40, 0, m0, r0, l0, 0);
 
   for(i =1; i<N; i++){
 
@@ -121,7 +121,7 @@ int main(){
   
   InicieAnimacion();
   
-  for(t=0,tdibujo=0; t<tmax; t+=dt,tdibujo+=dt){
+  for(t=0,tdibujo=0; t<10*tmax; t+=dt,tdibujo+=dt){
     //Dibujar
     if(tdibujo>tcuadro){
       InicieCuadro();
