@@ -118,6 +118,7 @@ void LatticeBoltzmann::ImposeFields(int t){
   ix =0;
   rho0=10*sin(omega*t); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
   for (iy =0; iy<Ly; iy++){
+    rho0=10*sin(omega*t); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
     for(i=0;i<Q;i++){
     n0=n(ix,iy,i);
     fnew[n0]=feq(rho0,Jx0,Jy0,i); 

@@ -3,7 +3,7 @@
 #include <cmath>
 using namespace std;
 
-const int Lx=400;
+const int Lx=600;
 const int Ly=200;
 
 const int Q=5;
@@ -30,13 +30,31 @@ public:
   double rho(int ix,int iy,bool UseNew);
   double Jx(int ix,int iy,bool UseNew);
   double Jy(int ix,int iy,bool UseNew);
-  double feq(double rho0,double Jx0,double Jy0,int i);
+  double feq(double rho0,double Jx0,double Jy0,int i, int ix, int iy);
   void Collision(void);
   void ImposeFields(int t);
   void Advection(void);
   void Start(double rho0,double Jx0,double Jy0);
   void Print(const char * NombreArchivo);
-};  
+  double Ccelda(int ix, int iy);
+  };  
+
+double LatticeBoltzmann::Ccelda(int ix, int iy){
+  int ix0 = 100;
+  double n1=1;
+  double n2=2*n1;
+  double m = -1/(tan(0.52));
+  double b = (Ly - m*ix0);
+  int x0 = 50;
+  int y0 = 100;
+  int R = 100;
+  
+  /* if(ix < ((iy-b)/m) and iy < m*ix +b){ return (C/n1); }
+     else{ return (C/n1)*(1-0.5*tanh(ix-ix0)); }*/
+  if(pow(ix-x0,2) + pow(iy-y0,2) < R*R and ix < x0+R){return C/n1;}
+  else{return 0;}
+
+  }
 LatticeBoltzmann::LatticeBoltzmann(void){
   //Set the weights
   w[0]=W0; w[1]=w[2]=w[3]=w[4]=(1.0-W0)/4;
@@ -74,11 +92,13 @@ double LatticeBoltzmann::Jy(int ix,int iy,bool UseNew){
   }
   return sum;
 }  
-double  LatticeBoltzmann::feq(double rho0,double Jx0,double Jy0,int i){
+double  LatticeBoltzmann::feq(double rho0,double Jx0,double Jy0,int i, int ix, int iy){
+   double C_r = Ccelda(ix, iy);
+  
   if(i>0)
-    return 3*w[i]*(C2*rho0+Vx[i]*Jx0+Vy[i]*Jy0);
+    return 3*w[i]*(C_r*C_r*rho0+Vx[i]*Jx0+Vy[i]*Jy0);
   else
-    return rho0*AUX0;
+    return rho0*(1-3*(C_r*C_r)*(1-W0));
 }  
 void LatticeBoltzmann::Start(double rho0,double Jx0,double Jy0){
   int ix,iy,i,n0;
@@ -86,7 +106,7 @@ void LatticeBoltzmann::Start(double rho0,double Jx0,double Jy0){
     for(iy=0;iy<Ly;iy++)
       for(i=0;i<Q;i++){ //on each direction
 	n0=n(ix,iy,i);
-	f[n0]=feq(rho0,Jx0,Jy0,i);
+	f[n0]=feq(rho0,Jx0,Jy0,i, ix, iy);
       }
 }  
 void LatticeBoltzmann::Collision(void){
@@ -97,7 +117,7 @@ void LatticeBoltzmann::Collision(void){
       rho0=rho(ix,iy,false); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
       for(i=0;i<Q;i++){ //for each velocity vector
 	n0=n(ix,iy,i);
-	fnew[n0]=UmUtau*f[n0]+Utau*feq(rho0,Jx0,Jy0,i);
+	fnew[n0]=UmUtau*f[n0]+Utau*feq(rho0,Jx0,Jy0,i, ix, iy);
       }
     }  
 }
@@ -105,24 +125,38 @@ void LatticeBoltzmann::ImposeFields(int t){
   int i,ix,iy,n0,ix1,iy1,n01;
   double lambda,omega,rho0,Jx0,Jy0; lambda=10; omega=2*M_PI/lambda*C;
   //an oscillating source in the middle
-  /* ix=Lx/3; iy=Ly/2;
-  ix1=2*Lx/3; iy1=Ly/2;
+  /* ix=20; iy=20;
   rho0=10*sin(omega*t); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
   for(i=0;i<Q;i++){
     n0=n(ix,iy,i);
-    n01=n(ix1, iy1, i);
-    fnew[n0]=feq(rho0,Jx0,Jy0,i);
-    fnew[n01]=feq(rho0,Jx0, Jy0, i); 
+    fnew[n0]=feq(rho0,Jx0,Jy0,i, ix, iy); 
     }*/
 
-  ix =0;
-  rho0=10*sin(omega*t); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
+   ix =0;
+  
   for (iy =0; iy<Ly; iy++){
+    //omega=2*M_PI/lambda*Ccelda(ix, iy);
+    rho0=100*sin(omega*t); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
     for(i=0;i<Q;i++){
     n0=n(ix,iy,i);
-    fnew[n0]=feq(rho0,Jx0,Jy0,i); 
+    fnew[n0]=feq(rho0,Jx0,Jy0,i, ix, iy); 
     }
-  }
+    }
+
+
+  /* for (iy =0; iy<Ly; iy++){
+     for(ix=0; ix<Lx; ix++){
+  
+       rho0=30*sin(omega*t); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
+       if(iy == -ix + 30){    
+        for(i=0;i<Q;i++){
+        n0=n(ix,iy,i);
+        fnew[n0]=feq(rho0,Jx0,Jy0,i, ix, iy); 
+	}
+       }
+     }
+     }*/
+   
   
 }
 void LatticeBoltzmann::Advection(void){
@@ -137,7 +171,7 @@ void LatticeBoltzmann::Advection(void){
 }
 void LatticeBoltzmann::Print(const char * NameFile){
   ofstream MyFile(NameFile); double rho0; int ix,iy;
-  for(ix=0;ix<Lx/2;ix++){
+  for(ix=0;ix<Lx/3;ix++){
     for(iy=0;iy<Ly;iy++){
       rho0=rho(ix,iy,true);
       MyFile<<ix<<" "<<iy<<" "<<rho0<<endl;
@@ -150,7 +184,7 @@ void LatticeBoltzmann::Print(const char * NameFile){
 
 int main(void){
   LatticeBoltzmann Waves;
-  int t,tmax=400;
+  int t,tmax=500;
   double rho0=0,Jx0=0,Jy0=0;
 
   //Start
