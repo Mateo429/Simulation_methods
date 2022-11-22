@@ -3,8 +3,8 @@
 #include <cmath>
 using namespace std;
 
-const int Lx=600;
-const int Ly=400;
+const int Lx=128;
+const int Ly=128;
 
 const int Q=5;
 const double W0=1.0/3;
@@ -17,7 +17,7 @@ const double tau=0.5;
 const double Utau=1.0/tau;
 const double UmUtau=1-Utau;
 
-//--------------------- class LatticeBoltzmann ------------
+//--------------------- Clase LatticeBoltzmann ------------
 class LatticeBoltzmann{
 private:
   double w[Q];      //Weights 
@@ -30,28 +30,14 @@ public:
   double rho(int ix,int iy,bool UseNew);
   double Jx(int ix,int iy,bool UseNew);
   double Jy(int ix,int iy,bool UseNew);
-  double feq(double rho0,double Jx0,double Jy0,int i, int ix, int iy);
+  double feq(double rho0,double Jx0,double Jy0,int i);
+  void Start(double rho0,double Jx0,double Jy0);
   void Collision(void);
   void ImposeFields(int t);
   void Advection(void);
-  void Start(double rho0,double Jx0,double Jy0);
-  void Print(const char * NombreArchivo);
-  double Ccelda(int ix, int iy);
-  };  
+  void Print(const char * NameFile);
 
-double LatticeBoltzmann::Ccelda(int ix, int iy){
-  int ix0 = 100;
-  double n1=1;
-  double n2=2*n1;
-  double m = -1/(tan(0.52));
-  double b = (Ly - m*ix0);
-  
-  /* if(ix < ((iy-b)/m) and iy < m*ix +b){ return (C/n1); }
-     else{ return (C/n1)*(1-0.5*tanh(ix-ix0)); }*/
-  if(ix<ix0){return C/n1;}
-  else{return (C/n1)*(1-0.5*tanh(ix-ix0));}
-
-  }
+};
 LatticeBoltzmann::LatticeBoltzmann(void){
   //Set the weights
   w[0]=W0; w[1]=w[2]=w[3]=w[4]=(1.0-W0)/4;
@@ -89,13 +75,11 @@ double LatticeBoltzmann::Jy(int ix,int iy,bool UseNew){
   }
   return sum;
 }  
-double  LatticeBoltzmann::feq(double rho0,double Jx0,double Jy0,int i, int ix, int iy){
-   double C_r = Ccelda(ix, iy);
-  
+double  LatticeBoltzmann::feq(double rho0,double Jx0,double Jy0,int i){
   if(i>0)
-    return 3*w[i]*(C_r*C_r*rho0+Vx[i]*Jx0+Vy[i]*Jy0);
+    return 3*w[i]*(C2*rho0+Vx[i]*Jx0+Vy[i]*Jy0);
   else
-    return rho0*(1-3*(C_r*C_r)*(1-W0));
+    return rho0*AUX0;
 }  
 void LatticeBoltzmann::Start(double rho0,double Jx0,double Jy0){
   int ix,iy,i,n0;
@@ -103,7 +87,7 @@ void LatticeBoltzmann::Start(double rho0,double Jx0,double Jy0){
     for(iy=0;iy<Ly;iy++)
       for(i=0;i<Q;i++){ //on each direction
 	n0=n(ix,iy,i);
-	f[n0]=feq(rho0,Jx0,Jy0,i, ix, iy);
+	f[n0]=feq(rho0,Jx0,Jy0,i);
       }
 }  
 void LatticeBoltzmann::Collision(void){
@@ -114,47 +98,20 @@ void LatticeBoltzmann::Collision(void){
       rho0=rho(ix,iy,false); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
       for(i=0;i<Q;i++){ //for each velocity vector
 	n0=n(ix,iy,i);
-	fnew[n0]=UmUtau*f[n0]+Utau*feq(rho0,Jx0,Jy0,i, ix, iy);
+	fnew[n0]=UmUtau*f[n0]+Utau*feq(rho0,Jx0,Jy0,i);
       }
     }  
 }
 void LatticeBoltzmann::ImposeFields(int t){
-  int i,ix,iy,n0,ix1,iy1,n01;
+  int i,ix,iy,n0;
   double lambda,omega,rho0,Jx0,Jy0; lambda=10; omega=2*M_PI/lambda*C;
   //an oscillating source in the middle
-  /* ix=20; iy=20;
+  ix=Lx/2; iy=Ly/2;
   rho0=10*sin(omega*t); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
   for(i=0;i<Q;i++){
     n0=n(ix,iy,i);
-    fnew[n0]=feq(rho0,Jx0,Jy0,i, ix, iy); 
-    }*/
-
-    /*  ix =0;
-  
-  for (iy =0; iy<Ly; iy++){
-    //omega=2*M_PI/lambda*Ccelda(ix, iy);
-    rho0=30*sin(omega*t); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
-    for(i=0;i<Q;i++){
-    n0=n(ix,iy,i);
-    fnew[n0]=feq(rho0,Jx0,Jy0,i, ix, iy); 
-    }
-    }*/
-
-
-   for (iy =0; iy<Ly; iy++){
-     for(ix=0; ix<Lx; ix++){
-    //omega=2*M_PI/lambda*Ccelda(ix, iy);
-       rho0=30*sin(omega*t); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
-       if(iy == -ix + 30){    
-        for(i=0;i<Q;i++){
-        n0=n(ix,iy,i);
-        fnew[n0]=feq(rho0,Jx0,Jy0,i, ix, iy); 
-	}
-       }
-     }
-    }
-   
-  
+    fnew[n0]=feq(rho0,Jx0,Jy0,i);
+  }
 }
 void LatticeBoltzmann::Advection(void){
   int ix,iy,i,ixnext,iynext,n0,n0next;
@@ -168,8 +125,8 @@ void LatticeBoltzmann::Advection(void){
 }
 void LatticeBoltzmann::Print(const char * NameFile){
   ofstream MyFile(NameFile); double rho0; int ix,iy;
-  for(ix=0;ix<Lx/3;ix++){
-    for(iy=0;iy<Ly/2;iy++){
+  for(ix=0;ix<Lx;ix++){
+    for(iy=0;iy<Ly;iy++){
       rho0=rho(ix,iy,true);
       MyFile<<ix<<" "<<iy<<" "<<rho0<<endl;
     }
@@ -177,23 +134,24 @@ void LatticeBoltzmann::Print(const char * NameFile){
   }
   MyFile.close();
 }
-//--------------- Global Functions ------------
+
+//------------------- Funciones Globales ------------
 
 int main(void){
-  LatticeBoltzmann Waves;
-  int t,tmax=400;
+  LatticeBoltzmann Ondas;
+  int t,tmax=100;
   double rho0=0,Jx0=0,Jy0=0;
 
   //Start
-  Waves.Start(rho0,Jx0,Jy0);
+  Ondas.Start(rho0,Jx0,Jy0);
   //Run
   for(t=0;t<tmax;t++){
-    Waves.Collision();
-    Waves.ImposeFields(t);
-    Waves.Advection();
+    Ondas.Collision();
+    Ondas.ImposeFields(t);
+    Ondas.Advection();
   }
-  //Show
-  Waves.Print("Waves2D.dat");
- 
+  //Print
+  Ondas.Print("Ondas.dat");
+
   return 0;
 } 

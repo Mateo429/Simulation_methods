@@ -3,7 +3,7 @@
 #include <cmath>
 using namespace std;
 
-const int Lx=600;
+const int Lx=400;
 const int Ly=400;
 
 const int Q=5;
@@ -40,18 +40,15 @@ public:
   };  
 
 double LatticeBoltzmann::Ccelda(int ix, int iy){
-  int ix0 = 100;
-  double n1=1;
-  double n2=2*n1;
-  double m = -1/(tan(0.52));
-  double b = (Ly - m*ix0);
+  int x0 = 50;
+  double m = -1/(tan(1.04));
+  double b = ((Ly) - m*x0);
+  double ix0 = (iy-b)/(m);
   
-  /* if(ix < ((iy-b)/m) and iy < m*ix +b){ return (C/n1); }
-     else{ return (C/n1)*(1-0.5*tanh(ix-ix0)); }*/
-  if(ix<ix0){return C/n1;}
-  else{return (C/n1)*(1-0.5*tanh(ix-ix0));}
+   return C*((3.0/4)-(1.0/4)*tanh(ix-x0));
+  
+}
 
-  }
 LatticeBoltzmann::LatticeBoltzmann(void){
   //Set the weights
   w[0]=W0; w[1]=w[2]=w[3]=w[4]=(1.0-W0)/4;
@@ -107,32 +104,43 @@ void LatticeBoltzmann::Start(double rho0,double Jx0,double Jy0){
       }
 }  
 void LatticeBoltzmann::Collision(void){
-  int ix,iy,i,n0; double rho0,Jx0,Jy0;
+  int ix,iy,i,n0; double rho0,Jx0,Jy0,R,x0,y0;
+  R=100;
+  x0=50;
+  y0=100;
+  
   for(ix=0;ix<Lx;ix++) //for each cell
     for(iy=0;iy<Ly;iy++){
       //compute the macroscopic fields on the cell
       rho0=rho(ix,iy,false); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
-      for(i=0;i<Q;i++){ //for each velocity vector
+
+     n0=n(ix,iy,0)
+      if(pow(ix-x0,2) + pow(iy-y0,2) > R*R and ix>x0){
+         
+	  fnew[n0+1] = f[n0+3];
+	  fnew[n0+2] =f[n0+4];
+          fnew[n0+3] = f[n0+1];
+	  fnew[n0+4] =f[n0+2];
+	  }
+
+      else {for(i=0;i<Q;i++){ //for each velocity vector
+
 	n0=n(ix,iy,i);
-	fnew[n0]=UmUtau*f[n0]+Utau*feq(rho0,Jx0,Jy0,i, ix, iy);
+        fnew[n0]=UmUtau*f[n0]+Utau*feq(rho0,Jx0,Jy0,i, ix, iy);
+      
+	}
       }
-    }  
+	} 
 }
 void LatticeBoltzmann::ImposeFields(int t){
   int i,ix,iy,n0,ix1,iy1,n01;
-  double lambda,omega,rho0,Jx0,Jy0; lambda=10; omega=2*M_PI/lambda*C;
-  //an oscillating source in the middle
-  /* ix=20; iy=20;
-  rho0=10*sin(omega*t); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
-  for(i=0;i<Q;i++){
-    n0=n(ix,iy,i);
-    fnew[n0]=feq(rho0,Jx0,Jy0,i, ix, iy); 
-    }*/
+  
+  double lambda,omega,rho0,Jx0,Jy0; lambda=10;
 
-    /*  ix =0;
+  /* ix =0;
   
   for (iy =0; iy<Ly; iy++){
-    //omega=2*M_PI/lambda*Ccelda(ix, iy);
+    omega=(2*M_PI/lambda)*C;
     rho0=30*sin(omega*t); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
     for(i=0;i<Q;i++){
     n0=n(ix,iy,i);
@@ -141,9 +149,9 @@ void LatticeBoltzmann::ImposeFields(int t){
     }*/
 
 
-   for (iy =0; iy<Ly; iy++){
+  for (iy =0; iy<Ly; iy++){
      for(ix=0; ix<Lx; ix++){
-    //omega=2*M_PI/lambda*Ccelda(ix, iy);
+     omega=2*M_PI/lambda*C;
        rho0=30*sin(omega*t); Jx0=Jx(ix,iy,false); Jy0=Jy(ix,iy,false);
        if(iy == -ix + 30){    
         for(i=0;i<Q;i++){
@@ -152,7 +160,7 @@ void LatticeBoltzmann::ImposeFields(int t){
 	}
        }
      }
-    }
+     }
    
   
 }
@@ -168,7 +176,7 @@ void LatticeBoltzmann::Advection(void){
 }
 void LatticeBoltzmann::Print(const char * NameFile){
   ofstream MyFile(NameFile); double rho0; int ix,iy;
-  for(ix=0;ix<Lx/3;ix++){
+  for(ix=0;ix<Lx/2;ix++){
     for(iy=0;iy<Ly/2;iy++){
       rho0=rho(ix,iy,true);
       MyFile<<ix<<" "<<iy<<" "<<rho0<<endl;
@@ -181,7 +189,7 @@ void LatticeBoltzmann::Print(const char * NameFile){
 
 int main(void){
   LatticeBoltzmann Waves;
-  int t,tmax=400;
+  int t,tmax=500;
   double rho0=0,Jx0=0,Jy0=0;
 
   //Start
@@ -194,6 +202,11 @@ int main(void){
   }
   //Show
   Waves.Print("Waves2D.dat");
+
+  /* for(double x =-20; x<20; x+=0.01){
+     std::cout<<x<<" "<< (-1.0/8)*tanh(x)  + 3.0/8 <<std::endl;*/
+
+ 
  
   return 0;
 } 
